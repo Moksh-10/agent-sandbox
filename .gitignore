@@ -1,0 +1,53 @@
+# Secrets and local env (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Instabox / cloudflared dev artifacts
+.instabox-*
+
+# Build outputs
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test and coverage
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# Go workspace (local only)
+go.work
+go.work.sum
+
+# Logs and temp
+*.log
+/tmp/
+/agent-note.txt
+/summary.txt
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Optional local tooling
+.cursor/

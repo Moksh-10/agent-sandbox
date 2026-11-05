@@ -1,0 +1,30 @@
+# Simulates two machines: control-plane (API / mock agent brain) and sandbox-worker (tools).
+# In production, sandbox-worker runs on isolated VMs; it registers its ephemeral URL with the control plane.
+services:
+  control-plane:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.control-plane
+    ports:
+      - "8080:8080"
+    environment:
+      CONTROL_PLANE_ADDR: ":8080"
+      SB_AGENT_TOKEN: "dev-token-change-me"
+
+  sandbox-worker:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.sandbox-worker
+    ports:
+      - "9090:9090"
+    environment:
+      SANDBOX_WORKER_ADDR: ":9090"
+      SANDBOX_PUBLIC_URL: "http://sandbox-worker:9090"
+      SANDBOX_WORKER_ID: "sandbox-docker-1"
+      CONTROL_PLANE_URL: "http://control-plane:8080"
+      SB_AGENT_TOKEN: "dev-token-change-me"
+      SANDBOX_WORKSPACE: "/workspace"
+    volumes:
+      - ..:/workspace:ro
+    depends_on:
+      - control-plane

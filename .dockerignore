@@ -1,0 +1,43 @@
+# Version control and CI metadata
+.git
+.gitignore
+.github
+
+# Secrets — never send to the Docker daemon
+.env
+.env.*
+!.env.example
+
+# Local dev machines (Instabox, tunnels, heartbeats)
+.instabox-*
+
+# Build artifacts (rebuilt inside the image)
+/bin/
+/dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Tests, coverage, and scratch
+**/*_test.go
+*.test
+*.out
+coverage.html
+/tmp/
+
+# Logs
+*.log
+
+# Docs and compose are not needed to compile binaries
+docs/
+README.md
+deploy/docker-compose.yml
+scripts/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/

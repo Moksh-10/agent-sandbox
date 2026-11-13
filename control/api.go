@@ -11,9 +11,10 @@ import (
 )
 
 type API struct {
-	Sessions *Sessions
-	Registry *Registry
-	Log      *slog.Logger
+	Sessions   *Sessions
+	Registry   *Registry
+	Dispatcher *Dispatcher
+	Log        *slog.Logger
 }
 
 func (a *API) Mount(mux *http.ServeMux) {
@@ -25,6 +26,8 @@ func (a *API) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/sessions/{id}/run", a.runSession)
 	mux.HandleFunc("POST /internal/workers/register", a.registerWorker)
 	mux.HandleFunc("POST /internal/workers/{id}/heartbeat", a.heartbeat)
+	mux.HandleFunc("GET /internal/workers/{id}/poll", a.pollWorker)
+	mux.HandleFunc("POST /internal/workers/{id}/results", a.postResult)
 }
 
 func (a *API) createSession(w http.ResponseWriter, r *http.Request) {
@@ -74,8 +77,8 @@ func (a *API) registerWorker(w http.ResponseWriter, r *http.Request) {
 		Capabilities []types.ToolName  `json:"capabilities"`
 		Labels       map[string]string `json:"labels"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" || req.BaseURL == "" {
-		http.Error(w, "id and base_url required", 400)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
+		http.Error(w, "id required", 400)
 		return
 	}
 	worker := types.SandboxWorker{ID: req.ID, BaseURL: req.BaseURL, Capabilities: req.Capabilities, Labels: req.Labels}
@@ -90,6 +93,37 @@ func (a *API) registerWorker(w http.ResponseWriter, r *http.Request) {
 func (a *API) heartbeat(w http.ResponseWriter, r *http.Request) {
 	if err := a.Registry.Heartbeat(r.Context(), r.PathValue("id")); err != nil {
 		http.Error(w, err.Error(), 404)
+		return
+	}
+	writeJSON(w, 200, map[string]string{"status": "ok"})
+}
+
+func (a *API) pollWorker(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := a.Registry.Heartbeat(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), 404)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+	defer cancel()
+	call, ok := a.Dispatcher.Next(ctx, id)
+	if !ok {
+		w.WriteHeader(204)
+		return
+	}
+	writeJSON(w, 200, map[string]any{"call": call})
+}
+
+func (a *API) postResult(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Result types.ToolResult `json:"result"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if !a.Dispatcher.Complete(body.Result) {
+		http.Error(w, "no caller waiting for this call", 410)
 		return
 	}
 	writeJSON(w, 200, map[string]string{"status": "ok"})

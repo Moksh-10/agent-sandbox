@@ -15,11 +15,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.sandbox-worker
-    ports:
-      - "9090:9090"
     environment:
-      SANDBOX_WORKER_ADDR: ":9090"
-      SANDBOX_PUBLIC_URL: "http://sandbox-worker:9090"
       SANDBOX_WORKER_ID: "sandbox-docker-1"
       CONTROL_PLANE_URL: "http://control-plane:8080"
       SB_AGENT_TOKEN: "dev-token-change-me"

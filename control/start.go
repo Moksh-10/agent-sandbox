@@ -20,7 +20,8 @@ func Start() {
 	addr := env("CONTROL_PLANE_ADDR", ":8080")
 
 	reg := NewRegistry(45 * time.Second)
-	remote := NewRemote(reg, token)
+	dispatcher := NewDispatcher()
+	remote := NewRemote(dispatcher, 2*time.Minute)
 
 	var picker SandboxPicker = &PickFromRegistry{Reg: reg}
 	if env("SANDBOX_ALLOCATOR", "pool") == "orchestrator" {
@@ -33,7 +34,7 @@ func Start() {
 
 	loop := &Loop{Picker: picker, Remote: remote, Log: log}
 	sessions := NewSessions(loop)
-	api := &API{Sessions: sessions, Registry: reg, Log: log}
+	api := &API{Sessions: sessions, Registry: reg, Dispatcher: dispatcher, Log: log}
 
 	mux := http.NewServeMux()
 	api.Mount(mux)
